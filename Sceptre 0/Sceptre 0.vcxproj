@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\GAME DEV\source\repos\Sceptre\Sceptre 0\Libraries\include\DirectXTK12\Inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>(/lLibraries\include\DirectXTK12\Inc)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -154,11 +154,6 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="Libraries\include\DirectXTK12\DirectXTK_Desktop_2022_Win10.vcxproj">
-      <Project>{3e0e8608-cd9b-4c76-af33-29ca38f2c9f0}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />

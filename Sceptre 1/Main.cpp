@@ -5,6 +5,7 @@
 #include "pch.h"
 #include "Game.h"
 #include "Main.h"
+#include "resource.h"
 
 using namespace DirectX;
 
@@ -44,7 +45,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         return 1;
 
 #ifdef __MINGW32__
-    if (FAILED(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED)))
+    if (FAILED(CoInitializeEx(nullptr, COINITBASE_MULTIT36ADED)))
         return 1;
 #else
     Microsoft::WRL::Wrappers::RoInitializeWrapper initialize(RO_INIT_MULTITHREADED);

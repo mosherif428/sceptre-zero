@@ -119,11 +119,19 @@ namespace DX
         HRESULT result;
     };
 
-    // Helper utility converts D3D API failures into exceptions.
-    inline void ThrowIfFailed(HRESULT hr)
+    inline void ThrowIfFailed(HRESULT hr, const wchar_t* message = nullptr)
     {
         if (FAILED(hr))
         {
+            if (message)
+            {
+                // Print additional error message
+                wprintf(L"%s\n", message);
+            }
+
+            // Print HRESULT
+            wprintf(L"Error HRESULT: 0x%X\n", hr);
+
             throw com_exception(hr);
         }
     }

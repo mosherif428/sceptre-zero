@@ -4,6 +4,7 @@
 
 #include "pch.h"
 #include "Game.h"
+#include "resource.h"
 
 extern void ExitGame() noexcept;
 
@@ -227,18 +228,19 @@ void Game::CreateDeviceDependentResources()
     resourceUpload.Begin();
 
     DX::ThrowIfFailed(
+        CreateWICTextureFromFile(device, resourceUpload, L"background.jpg",
+            m_background.ReleaseAndGetAddressOf()),
+        L"Failed to load background texture");
+
+    CreateShaderResourceView(device, m_background.Get(),
+        m_resourceDescriptors->GetCpuHandle(Descriptors::BackgroundSceptre));
+
+    DX::ThrowIfFailed(
         CreateWICTextureFromFile(device, resourceUpload, L"sceptre1.png",
             m_texture.ReleaseAndGetAddressOf()));
 
     CreateShaderResourceView(device, m_texture.Get(),
         m_resourceDescriptors->GetCpuHandle(Descriptors::SceptreFull));
-
-    DX::ThrowIfFailed(
-        CreateWICTextureFromFile(device, resourceUpload, L"background.jpg",
-            m_background.ReleaseAndGetAddressOf()));
-
-    CreateShaderResourceView(device, m_background.Get(),
-        m_resourceDescriptors->GetCpuHandle(Descriptors::BackgroundSceptre));
 
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(),
         m_deviceResources->GetDepthBufferFormat());

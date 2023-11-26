@@ -44,6 +44,9 @@ public:
     // Properties
     void GetDefaultSize( int& width, int& height ) const noexcept;
 
+
+    RECT m_fullscreenRect;
+
 private:
 
     void Update(DX::StepTimer const& timer);
@@ -80,6 +83,6 @@ private:
     DirectX::SimpleMath::Vector2 m_screenPos;
     DirectX::SimpleMath::Vector2 m_origin;
 
-    RECT m_fullscreenRect;
+    
     Microsoft::WRL::ComPtr<ID3D12Resource> m_background;
 };
