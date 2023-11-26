@@ -11,7 +11,8 @@ using namespace DirectX;
 
 using Microsoft::WRL::ComPtr;
 
-Game::Game() noexcept(false)
+Game::Game() noexcept(false) :
+    m_fullscreenRect{}
 {
     m_deviceResources = std::make_unique<DX::DeviceResources>();
     // TODO: Provide parameters for swapchain format, depth/stencil format, and backbuffer count.
@@ -97,7 +98,11 @@ void Game::Render()
 
     m_spriteBatch->Begin(commandList);
 
-    m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(Descriptors::SceptreIcon),
+    m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(Descriptors::BackgroundSceptre),
+        GetTextureSize(m_background.Get()),
+        m_fullscreenRect);
+
+    m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(Descriptors::SceptreFull),
         GetTextureSize(m_texture.Get()),
         m_screenPos, nullptr, Colors::White, 0.f, m_origin);
 
@@ -228,6 +233,13 @@ void Game::CreateDeviceDependentResources()
     CreateShaderResourceView(device, m_texture.Get(),
         m_resourceDescriptors->GetCpuHandle(Descriptors::SceptreFull));
 
+    DX::ThrowIfFailed(
+        CreateWICTextureFromFile(device, resourceUpload, L"background.jpg",
+            m_background.ReleaseAndGetAddressOf()));
+
+    CreateShaderResourceView(device, m_background.Get(),
+        m_resourceDescriptors->GetCpuHandle(Descriptors::BackgroundSceptre));
+
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(),
         m_deviceResources->GetDepthBufferFormat());
 
@@ -243,6 +255,8 @@ void Game::CreateDeviceDependentResources()
         m_deviceResources->GetCommandQueue());
 
     uploadResourcesFinished.wait();
+
+
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -252,15 +266,20 @@ void Game::CreateWindowSizeDependentResources()
     auto viewport = m_deviceResources->GetScreenViewport();
     m_spriteBatch->SetViewport(viewport);
 
+    
+
     auto size = m_deviceResources->GetOutputSize();
     m_screenPos.x = float(size.right) / 2.f;
     m_screenPos.y = float(size.bottom) / 2.f;
+
+    RECT m_fullscreenRect = size;
 }
 
 void Game::OnDeviceLost()
 {
     // TODO: Add Direct3D resource cleanup here.
     m_texture.Reset();
+    m_background.Reset();
     m_resourceDescriptors.reset();
     m_spriteBatch.reset();
 
