@@ -228,7 +228,7 @@ void Game::CreateDeviceDependentResources()
     resourceUpload.Begin();
 
     DX::ThrowIfFailed(
-        CreateWICTextureFromFile(device, resourceUpload, L"background.jpg",
+        CreateWICTextureFromFile(device, resourceUpload, L"background.png",
             m_background.ReleaseAndGetAddressOf()),
         L"Failed to load background texture");
 
@@ -247,6 +247,7 @@ void Game::CreateDeviceDependentResources()
 
     SpriteBatchPipelineStateDescription pd(rtState,
         &CommonStates::NonPremultiplied);
+    m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, pd);
 
     XMUINT2 sceptreSize = GetTextureSize(m_texture.Get());
 
@@ -268,13 +269,12 @@ void Game::CreateWindowSizeDependentResources()
     auto viewport = m_deviceResources->GetScreenViewport();
     m_spriteBatch->SetViewport(viewport);
 
-    
+    m_fullscreenRect = m_deviceResources->GetOutputSize();
 
     auto size = m_deviceResources->GetOutputSize();
     m_screenPos.x = float(size.right) / 2.f;
     m_screenPos.y = float(size.bottom) / 2.f;
 
-    RECT m_fullscreenRect = size;
 }
 
 void Game::OnDeviceLost()
