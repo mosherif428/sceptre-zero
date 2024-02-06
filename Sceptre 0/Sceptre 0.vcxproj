@@ -76,7 +76,7 @@
     <LibraryPath>E:\GAME DEV\source\repos\Sceptre\Sceptre 0\Libraries\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>E:\GAME DEV\source\repos\Sceptre\Sceptre 0\Libraries\include\DirectXTK12\Inc;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

@@ -12,8 +12,20 @@ using namespace DirectX;
 
 using Microsoft::WRL::ComPtr;
 
+namespace
+{
+    const XMVECTORF32 START_POSITION = { 0.f, -1.5f, 0.f, 0.f };
+    const XMVECTORF32 ROOM_BOUNDS = { 8.f, 6.f, 12.f, 0.f };
+    constexpr float ROTATION_GAIN = 0.004f;
+    constexpr float MOVEMENT_GAIN = 0.07f;
+}
+
 Game::Game() noexcept(false) :
-    m_fullscreenRect{}
+    m_fullscreenRect{},
+    m_pitch(0),
+    m_yaw(0),
+    m_cameraPos(START_POSITION),
+    m_mapColor(Colors::White)
 {
     m_deviceResources = std::make_unique<DX::DeviceResources>();
     // TODO: Provide parameters for swapchain format, depth/stencil format, and backbuffer count.
@@ -41,6 +53,10 @@ void Game::Initialize(HWND window, int width, int height)
 
     m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
+
+    m_keyboard = std::make_unique<Keyboard>();
+    m_mouse = std::make_unique<Mouse>();
+    m_mouse->SetWindow(window);
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
@@ -71,6 +87,37 @@ void Game::Update(DX::StepTimer const& timer)
 
     // TODO: Add your game logic here.
     elapsedTime;
+    auto kb = m_keyboard->GetState();
+    if (kb.Escape)
+    {
+        ExitGame();
+    }
+
+    auto mouse = m_mouse->GetState();
+
+    // limit pitch to straight up or straight down
+    constexpr float limit = XM_PIDIV2 - 0.01f;
+    m_pitch = std::max(-limit, m_pitch);
+    m_pitch = std::min(+limit, m_pitch);
+
+    // keep longitude in sane range by wrapping
+    if (m_yaw > XM_PI)
+    {
+        m_yaw -= XM_2PI;
+    }
+    else if (m_yaw < -XM_PI)
+    {
+        m_yaw += XM_2PI;
+    }
+
+    float y = sinf(m_pitch);
+    float r = cosf(m_pitch);
+    float z = r * cosf(m_yaw);
+    float x = r * sinf(m_yaw);
+
+    XMVECTOR lookAt = m_cameraPos + DirectX::SimpleMath::Vector3::Vector3(x, y, z);
+
+    m_view = XMMatrixLookAtRH(m_cameraPos, lookAt, DirectX::SimpleMath::Vector3::Vector3::Up);
 
     PIXEndEvent();
 }
@@ -107,9 +154,22 @@ void Game::Render()
         GetTextureSize(m_texture.Get()),
         m_screenPos, nullptr, Colors::White, 0.f, m_origin);
 
+    m_mapEffect->SetMatrices(DirectX::SimpleMath::Matrix::Matrix::Identity, m_view, m_proj);
+    m_mapEffect->SetDiffuseColor(m_mapColor);
+    m_mapEffect->Apply(commandList);
+    m_map->Draw(commandList);
+
     m_spriteBatch->End();
 
     PIXEndEvent(commandList);
+
+    /*ID3D12DescriptorHeap* heaps[] = {
+    m_resourceDescriptors->Heap(), m_states->Heap()
+    };
+    commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)),
+        heaps);*/
+
+    
 
     // Show the new frame.
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Present");
@@ -223,9 +283,44 @@ void Game::CreateDeviceDependentResources()
     m_resourceDescriptors = std::make_unique<DescriptorHeap>(device,
         Descriptors::Count);
 
+    m_resourceDescriptors = std::make_unique<DescriptorHeap>(device, 1);
+    m_states = std::make_unique<CommonStates>(device);
+
+    m_map = GeometricPrimitive::CreateBox(
+        XMFLOAT3(ROOM_BOUNDS[0], ROOM_BOUNDS[1], ROOM_BOUNDS[2]),
+        false, true);
+
+    RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(),
+        m_deviceResources->GetDepthBufferFormat());
+
+    {
+        EffectPipelineStateDescription pd(
+            &GeometricPrimitive::VertexType::InputLayout,
+            CommonStates::Opaque,
+            CommonStates::DepthDefault,
+            CommonStates::CullCounterClockwise,
+            rtState);
+
+        m_mapEffect = std::make_unique<BasicEffect>(device,
+            EffectFlags::Lighting | EffectFlags::Texture, pd);
+        m_mapEffect->EnableDefaultLighting();
+    }
+
     ResourceUploadBatch resourceUpload(device);
 
     resourceUpload.Begin();
+
+    
+
+    DX::ThrowIfFailed(
+        CreateDDSTextureFromFile(device, resourceUpload, L"maptexture.dds",
+              m_mapTex.ReleaseAndGetAddressOf()));
+
+    CreateShaderResourceView(device, m_mapTex.Get(),
+        m_resourceDescriptors->GetFirstCpuHandle());
+
+    m_mapEffect->SetTexture(m_resourceDescriptors->GetFirstGpuHandle(),
+        m_states->LinearClamp());
 
     DX::ThrowIfFailed(
         CreateWICTextureFromFile(device, resourceUpload, L"background.png",
@@ -237,13 +332,11 @@ void Game::CreateDeviceDependentResources()
 
     DX::ThrowIfFailed(
         CreateWICTextureFromFile(device, resourceUpload, L"sceptre1.png",
-            m_texture.ReleaseAndGetAddressOf()));
+            m_texture.ReleaseAndGetAddressOf()),
+        L"Failed to load sceptre texture");
 
     CreateShaderResourceView(device, m_texture.Get(),
         m_resourceDescriptors->GetCpuHandle(Descriptors::SceptreFull));
-
-    RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(),
-        m_deviceResources->GetDepthBufferFormat());
 
     SpriteBatchPipelineStateDescription pd(rtState,
         &CommonStates::NonPremultiplied);
@@ -253,6 +346,9 @@ void Game::CreateDeviceDependentResources()
 
     m_origin.x = float(sceptreSize.x / 2);
     m_origin.y = float(sceptreSize.y / 2);
+
+    
+
 
     auto uploadResourcesFinished = resourceUpload.End(
         m_deviceResources->GetCommandQueue());
@@ -274,6 +370,9 @@ void Game::CreateWindowSizeDependentResources()
     auto size = m_deviceResources->GetOutputSize();
     m_screenPos.x = float(size.right) / 2.f;
     m_screenPos.y = float(size.bottom) / 2.f;
+    m_proj = DirectX::SimpleMath::Matrix::Matrix::CreatePerspectiveFieldOfView(
+        XMConvertToRadians(70.f),
+        float(size.right) / float(size.bottom), 0.01f, 100.f);
 
 }
 
@@ -284,6 +383,12 @@ void Game::OnDeviceLost()
     m_background.Reset();
     m_resourceDescriptors.reset();
     m_spriteBatch.reset();
+
+    m_map.reset();
+    m_mapTex.Reset();
+    m_resourceDescriptors.reset();
+    m_states.reset();
+    m_mapEffect.reset();
 
     // If using the DirectX Tool Kit for DX12, uncomment this line:
     m_graphicsMemory.reset();

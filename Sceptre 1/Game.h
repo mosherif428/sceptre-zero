@@ -6,6 +6,7 @@
 
 #include "DeviceResources.h"
 #include "StepTimer.h"
+#include "pch.h"
 
 // A basic game implementation that creates a D3D12 device and
 // provides a game loop.
@@ -66,7 +67,7 @@ private:
     // If using the DirectX Tool Kit for DX12, uncomment this line:
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
 
-    std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
+    //std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
     Microsoft::WRL::ComPtr<ID3D12Resource> m_texture;
 
    
@@ -85,4 +86,23 @@ private:
 
     
     Microsoft::WRL::ComPtr<ID3D12Resource> m_background;
+
+    std::unique_ptr<DirectX::Keyboard> m_keyboard;
+    std::unique_ptr<DirectX::Mouse> m_mouse;
+
+    std::unique_ptr<DirectX::GeometricPrimitive> m_map;
+
+    DirectX::SimpleMath::Matrix m_view;
+    DirectX::SimpleMath::Matrix m_proj;
+
+    float m_pitch;
+    float m_yaw;
+    DirectX::SimpleMath::Vector3 m_cameraPos;
+
+    DirectX::SimpleMath::Color m_mapColor;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_mapTex;
+    std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
+    std::unique_ptr<DirectX::CommonStates> m_states;
+    std::unique_ptr<DirectX::BasicEffect> m_mapEffect;
 };
